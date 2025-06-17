@@ -1,114 +1,101 @@
+// script.js
+
 let currentQuestionIndex = 0;
 let score = 0;
 let questions = [];
 let hints = {};
-let studentId = '';
 let userAnswers = [];
+let studentId = "";
 
-async function loadData() {
-  const qResponse = await fetch('questions.json');
-  const hResponse = await fetch('hints.json');
-  questions = await qResponse.json();
-  const hintArray = await hResponse.json();
-  hints = Object.fromEntries(hintArray.map(h => [h.id, h.text]));
-  showQuestion();
+async function loadQuestions() {
+  const questionsResponse = await fetch("questions.json");
+  questions = await questionsResponse.json();
+  const hintsResponse = await fetch("hints.json");
+  const hintData = await hintsResponse.json();
+  hintData.forEach(h => hints[h.id] = h.text);
+  document.getElementById("start-page").style.display = "block";
 }
 
 function startQuiz() {
-  studentId = document.getElementById('student-id').value.trim();
+  studentId = document.getElementById("student-id").value.trim();
   if (!studentId) {
-    alert("Please enter your student ID.");
+    alert("Please enter your Student ID");
     return;
   }
-  document.getElementById('start-container').style.display = 'none';
-  document.getElementById('quiz-container').style.display = 'block';
-  loadData();
+  document.getElementById("start-page").style.display = "none";
+  document.getElementById("quiz-container").style.display = "block";
+  showQuestion(currentQuestionIndex);
 }
 
-function showQuestion() {
-  const question = questions[currentQuestionIndex];
-  document.getElementById('question-number').textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-  document.getElementById('question-text').textContent = question.questionText;
-
-  const choicesEl = document.getElementById('choices');
-  choicesEl.innerHTML = '';
-  question.choices.forEach(choice => {
-    const label = document.createElement('label');
-    label.className = 'choice';
-    label.innerHTML = `
-      <input type="radio" name="choice" value="${choice}"> ${choice}
-    `;
-    choicesEl.appendChild(label);
+function showQuestion(index) {
+  const q = questions[index];
+  document.getElementById("question-number").textContent = `${index + 1}/${questions.length}`;
+  document.getElementById("question-text").textContent = q.questionText;
+  const choicesContainer = document.getElementById("choices");
+  choicesContainer.innerHTML = "";
+  q.choices.forEach((choice, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = `⚪️ ${choice}`;
+    btn.className = "choice-btn";
+    btn.onclick = () => handleAnswer(choice);
+    choicesContainer.appendChild(btn);
   });
-
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('hint').textContent = '';
-  document.getElementById('next-button').style.display = 'none';
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("hint").textContent = "";
+  document.getElementById("next-btn").style.display = "none";
 }
 
-function checkAnswer() {
-  const selected = document.querySelector('input[name="choice"]:checked');
-  if (!selected) return;
-
-  const answer = selected.value;
-  const question = questions[currentQuestionIndex];
-  const isCorrect = answer === question.answer;
-
-  userAnswers.push({
-    studentId,
-    questionId: question.id,
-    userAnswer: answer,
-    score: isCorrect ? 2 : 0,
-    attempt: 1
-  });
-
-  if (isCorrect) {
-    document.getElementById('feedback').textContent = question.feedback_correct;
+function handleAnswer(selected) {
+  const q = questions[currentQuestionIndex];
+  const correct = selected === q.answer;
+  if (correct) {
     score += 2;
+    document.getElementById("feedback").textContent = q.feedback_correct;
   } else {
-    document.getElementById('feedback').textContent = question.feedback_wrong;
+    document.getElementById("feedback").textContent = q.feedback_wrong;
   }
-
-  const hintText = hints[question.hintId] || '';
-  document.getElementById('hint').textContent = `💡 Hint: ${hintText}`;
-  document.getElementById('next-button').style.display = 'inline-block';
+  const hintText = hints[q.hintId] || "";
+  document.getElementById("hint").textContent = hintText;
+  userAnswers.push({ questionId: q.id, selected, correct, attempt: 1 });
+  document.getElementById("next-btn").style.display = "block";
+  const buttons = document.querySelectorAll(".choice-btn");
+  buttons.forEach(btn => btn.disabled = true);
 }
 
 function nextQuestion() {
   currentQuestionIndex++;
   if (currentQuestionIndex < questions.length) {
-    showQuestion();
+    showQuestion(currentQuestionIndex);
   } else {
-    showFinalScore();
+    endQuiz();
   }
 }
 
-function showFinalScore() {
-  document.getElementById('quiz-container').style.display = 'none';
-  document.getElementById('score-container').style.display = 'block';
-  document.getElementById('final-score').textContent = `✅ Your total score: ${score} / ${questions.length * 2}`;
-  document.getElementById('submit-button').style.display = 'inline-block';
+function endQuiz() {
+  document.getElementById("quiz-container").style.display = "none";
+  document.getElementById("result").style.display = "block";
+  document.getElementById("score").textContent = `${score}/${questions.length * 2}`;
 }
 
-async function submitAnswers() {
-  for (let entry of userAnswers) {
-    try {
-      await fetch('/api/sheet', {
-        method: 'POST',
-        body: JSON.stringify(entry),
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } catch (e) {
-      console.error('❌ Submission failed:', e);
-    }
-  }
-
-  alert("✅ Your answers were submitted!");
-  document.getElementById('submit-button').disabled = true;
+function submitToSpreadsheet() {
+  userAnswers.forEach(ans => {
+    fetch("https://relative-clause-quiz-vercel.vercel.app/api/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentId,
+        questionId: ans.questionId,
+        userAnswer: ans.selected,
+        score: ans.correct ? 2 : 0,
+        attempt: ans.attempt
+      })
+    });
+  });
+  alert("✅ Your answers have been submitted. Thank you!");
 }
 
-// Attach event listeners
-document.getElementById('start-button').addEventListener('click', startQuiz);
-document.getElementById('choices').addEventListener('change', checkAnswer);
-document.getElementById('next-button').addEventListener('click', nextQuestion);
-document.getElementById('submit-button').addEventListener('click', submitAnswers);
+document.getElementById("start-btn").onclick = startQuiz;
+document.getElementById("next-btn").onclick = nextQuestion;
+document.getElementById("submit-btn").onclick = submitToSpreadsheet;
+
+loadQuestions();
