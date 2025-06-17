@@ -3,43 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quantifiers & Agreement Grammar App</title>
+  <title>Quantifiers & Agreement Quiz</title>
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="container">
     <h1>Quantifiers & Agreement Quiz</h1>
-
-    <!-- Student ID Entry -->
-    <div id="studentEntry">
-      <label for="studentIdInput">Enter your Student ID:</label>
-      <input type="text" id="studentIdInput" placeholder="e.g., S12345" class="input" />
-      <button id="startBtn" class="btn">Start Quiz</button>
+    <div id="quiz-box">
+      <p id="progress">1 / 40</p>
+      <div id="question-text"></div>
+      <div id="choices"></div>
+      <button id="next-btn" class="btn-next">Next</button>
+      <button id="submit-btn" class="btn-submit" style="display: none;">Submit</button>
     </div>
 
-    <!-- Quiz Content -->
-    <div id="quizContent" class="hidden">
-      <p id="questionNumber" class="question-number"></p>
-      <p id="questionText" class="question-text">Loading question...</p>
-      <div id="choices" class="choices-container"></div>
-
-      <div id="feedback" class="feedback"></div>
-      <div id="hintText" class="hint hidden"></div>
-
-      <div class="nav-buttons">
-        <button id="nextBtn" class="btn">Next</button>
-      </div>
+    <div id="result" style="display:none;">
+      <h2>✅ Quiz Complete!</h2>
+      <p id="final-score"></p>
+      <button id="send-btn" class="btn-submit">📤 Send My Score</button>
     </div>
 
-    <!-- Result Page -->
-    <div id="resultPage" class="hidden">
-      <h2>🎉 Quiz Complete!</h2>
-      <p id="scoreSummary"></p>
-      <button id="submitBtn" class="btn btn-submit">Submit to Teacher</button>
-    </div>
+    <div id="feedback" class="feedback"></div>
+    <div id="hint" class="hint"></div>
   </div>
 
-  <script src="script.js" type="module"></script>
+  <script src="script.js"></script>
 </body>
 </html>
