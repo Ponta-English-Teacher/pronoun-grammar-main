@@ -1,72 +1,124 @@
 let questions = [];
-let currentQuestion = 0;
-let score = 0;
-let studentId = '';
 let hints = {};
+let currentIndex = 0;
+let score = 0;
+let studentId = "";
+let responses = [];
 
-document.getElementById('startBtn').addEventListener('click', async () => {
-  studentId = document.getElementById('studentIdInput').value.trim();
-  if (!studentId) return alert('Please enter your Student ID.');
+const startBtn = document.getElementById("startBtn");
+const quizContent = document.getElementById("quizContent");
+const studentEntry = document.getElementById("studentEntry");
+const studentIdInput = document.getElementById("studentIdInput");
+const questionCounter = document.getElementById("questionCounter");
+const questionText = document.getElementById("questionText");
+const choicesDiv = document.getElementById("choices");
+const feedbackDiv = document.getElementById("feedback");
+const hintBox = document.getElementById("hintText");
+const nextBtn = document.getElementById("nextBtn");
+const submitBtn = document.getElementById("submitBtn");
+const finalScreen = document.getElementById("finalScreen");
+const scoreSummary = document.getElementById("scoreSummary");
+const finalSubmitBtn = document.getElementById("finalSubmitBtn");
 
-  try {
-    const res = await fetch('questions.json');
-    questions = await res.json();
-
-    const hintRes = await fetch('hints.json');
-    hints = await hintRes.json();
-
-    document.getElementById('studentEntry').style.display = 'none';
-    document.getElementById('quizContent').style.display = 'block';
-    showQuestion();
-  } catch (e) {
-    document.getElementById('questionText').textContent = 'Failed to load questions.';
-    console.error(e);
+startBtn.addEventListener("click", () => {
+  const id = studentIdInput.value.trim();
+  if (!id) {
+    alert("Please enter your Student ID.");
+    return;
   }
+  studentId = id;
+  studentEntry.style.display = "none";
+  quizContent.style.display = "block";
+  loadQuestion();
 });
 
-function showQuestion() {
-  const q = questions[currentQuestion];
-  document.getElementById('questionNumber').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
-  document.getElementById('questionText').textContent = q.questionText;
+async function fetchData() {
+  const qRes = await fetch("questions.json");
+  questions = await qRes.json();
+  const hRes = await fetch("hints.json");
+  const hintsData = await hRes.json();
+  hintsData.forEach((h) => (hints[h.id] = h.text));
+}
 
-  const choicesDiv = document.getElementById('choices');
-  choicesDiv.innerHTML = '';
-  q.choices.forEach(choice => {
-    const btn = document.createElement('button');
-    btn.textContent = choice;
-    btn.onclick = () => handleAnswer(choice, q);
-    choicesDiv.appendChild(btn);
+function loadQuestion() {
+  const q = questions[currentIndex];
+  questionCounter.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+  questionText.textContent = q.questionText;
+  choicesDiv.innerHTML = "";
+  feedbackDiv.innerText = "";
+  hintBox.innerText = "";
+
+  q.choices.forEach((choice) => {
+    const label = document.createElement("label");
+    label.className = "choice-label";
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "choice";
+    input.value = choice;
+    label.appendChild(input);
+    label.append(` ${choice}`);
+    choicesDiv.appendChild(label);
+    choicesDiv.appendChild(document.createElement("br"));
   });
 
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('hintText').textContent = '';
+  nextBtn.style.display = "block";
+  submitBtn.style.display = "none";
 }
 
-function handleAnswer(choice, question) {
-  const feedbackDiv = document.getElementById('feedback');
-  const hintDiv = document.getElementById('hintText');
-  const isCorrect = choice === question.answer;
+nextBtn.addEventListener("click", () => {
+  const selected = document.querySelector("input[name='choice']:checked");
+  if (!selected) {
+    alert("Please select an answer.");
+    return;
+  }
 
-  feedbackDiv.textContent = isCorrect ? `✅ ${question.feedback_correct}` : `❌ ${question.feedback_wrong}`;
-  feedbackDiv.className = isCorrect ? 'correct' : 'incorrect';
+  const userAnswer = selected.value;
+  const q = questions[currentIndex];
+  const isCorrect = userAnswer === q.answer;
+  const point = isCorrect ? 2 : 0;
+  score += point;
 
-  const hintMessage = hints[question.hintId] || `Hint: ${question.hintId}`;
-  hintDiv.textContent = hintMessage;
+  feedbackDiv.textContent = isCorrect ? q.feedback_correct : q.feedback_wrong;
+  hintBox.textContent = hints[q.hintId] || "";
 
-  document.getElementById('nextBtn').classList.remove('hidden');
-}
+  responses.push({
+    studentId,
+    questionId: q.id,
+    userAnswer,
+    score: point,
+    attempt: 1,
+  });
 
-document.getElementById('nextBtn').addEventListener('click', () => {
-  currentQuestion++;
-  document.getElementById('nextBtn').classList.add('hidden');
-
-  if (currentQuestion < questions.length) {
-    showQuestion();
+  currentIndex++;
+  if (currentIndex < questions.length) {
+    setTimeout(() => {
+      loadQuestion();
+    }, 1200);
   } else {
-    document.getElementById('questionText').textContent = '🎉 Quiz complete!';
-    document.getElementById('choices').innerHTML = '';
-    document.getElementById('feedback').textContent = `You scored ${score} out of ${questions.length}.`;
-    document.getElementById('hintText').textContent = '';
-    document.querySelector('.nav-buttons').innerHTML = '';
+    showFinalScreen();
   }
 });
+
+function showFinalScreen() {
+  quizContent.style.display = "none";
+  finalScreen.style.display = "block";
+  scoreSummary.textContent = `You scored ${score} out of ${questions.length * 2}`;
+}
+
+finalSubmitBtn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/sheet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(responses),
+    });
+    const result = await res.json();
+    alert(result.result || "Submitted successfully!");
+    finalSubmitBtn.disabled = true;
+  } catch (err) {
+    alert("Submission failed.");
+    console.error(err);
+  }
+});
+
+window.addEventListener("DOMContentLoaded", fetchData);
