@@ -2,12 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pronoun Grammar Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quantifier & Agreement Grammar App</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Pronoun Grammar Quiz</h1>
-  <button onclick="submitAnswer()">Send Answer</button>
-  <script src="script.js"></script>
+  <div class="container">
+    <h1>Quantifier & Agreement Grammar App</h1>
+
+    <div id="questionBox">
+      <div id="questionCounter"></div>
+      <div id="questionText"></div>
+      <div id="choicesContainer"></div>
+      <div id="hintArea"></div>
+    </div>
+
+    <div id="navigationButtons">
+      <button id="prevBtn">Previous</button>
+      <button id="nextBtn">Next</button>
+    </div>
+
+    <div id="resultBox" style="display:none;">
+      <h2>Quiz Complete!</h2>
+      <p id="scoreDisplay"></p>
+      <button onclick="location.reload()">Restart</button>
+    </div>
+
+    <div id="feedbackArea"></div>
+
+    <div id="inputArea">
+      <label for="studentId">Student ID:</label>
+      <input type="text" id="studentId" placeholder="Enter your student ID" />
+      <button onclick="submitAnswer()">Submit Answers</button>
+    </div>
+  </div>
+
+  <script src="script.js" type="module"></script>
 </body>
 </html>
