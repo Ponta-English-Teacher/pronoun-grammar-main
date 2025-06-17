@@ -1,126 +1,98 @@
+// ✅ script.js — Full Quiz Logic (40 Questions Supported)
+
 let currentQuestionIndex = 0;
-let questions = [];
-let hints = {};
 let studentId = "";
-let score = 0;
-let attempt = 1;
+let questions = [];
 
-const endpoint = import.meta.env.VITE_GAS_ENDPOINT;
+const studentEntry = document.getElementById("studentEntry");
+const quizContent = document.getElementById("quizContent");
+const studentIdInput = document.getElementById("studentIdInput");
+const startBtn = document.getElementById("startBtn");
+const questionText = document.getElementById("questionText");
+const questionNumber = document.getElementById("questionNumber");
+const choicesContainer = document.getElementById("choices");
+const feedbackBox = document.getElementById("feedback");
+const hintText = document.getElementById("hintText");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const submitBtn = document.getElementById("submitBtn");
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("startBtn").addEventListener("click", startQuiz);
-  document.getElementById("prevBtn").addEventListener("click", showPreviousQuestion);
-  document.getElementById("nextBtn").addEventListener("click", showNextQuestion);
-  document.getElementById("submitBtn").addEventListener("click", submitQuiz);
-  loadQuestionsAndHints();
-});
-
-function startQuiz() {
-  const input = document.getElementById("studentIdInput").value.trim();
-  if (!input) {
-    alert("Please enter your student ID.");
+startBtn.addEventListener("click", () => {
+  studentId = studentIdInput.value.trim();
+  if (studentId === "") {
+    alert("Please enter your Student ID.");
     return;
   }
-  studentId = input;
-  document.getElementById("studentEntry").style.display = "none";
-  document.getElementById("quizContent").style.display = "block";
-  loadQuestion();
-}
+  studentEntry.style.display = "none";
+  quizContent.style.display = "block";
+  loadQuestions();
+});
 
-async function loadQuestionsAndHints() {
+async function loadQuestions() {
   try {
-    const qRes = await fetch("questions.json");
-    const hRes = await fetch("hints.json");
-    questions = await qRes.json();
-    const hintArray = await hRes.json();
-    hintArray.forEach(h => hints[h.id] = h.text);
+    const res = await fetch("questions.json");
+    questions = await res.json();
+    renderQuestion();
   } catch (err) {
-    alert("Failed to load quiz data.");
-    console.error(err);
+    console.error("❌ Failed to load questions:", err);
+    questionText.textContent = "Failed to load questions.";
   }
 }
 
-function loadQuestion() {
+function renderQuestion() {
   const q = questions[currentQuestionIndex];
-  document.getElementById("questionNumber").textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-  document.getElementById("questionText").textContent = q.questionText;
-  document.getElementById("choices").innerHTML = "";
+  questionText.textContent = q.questionText;
+  questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+  choicesContainer.innerHTML = "";
+  feedbackBox.textContent = "";
+  hintText.classList.add("hidden");
 
-  q.choices.forEach((choice, idx) => {
+  q.choices.forEach(choice => {
     const btn = document.createElement("button");
     btn.textContent = choice;
-    btn.className = "btn m-1";
-    btn.onclick = () => checkAnswer(choice);
-    document.getElementById("choices").appendChild(btn);
+    btn.className = "btn choice-btn";
+    btn.addEventListener("click", () => checkAnswer(choice));
+    choicesContainer.appendChild(btn);
   });
 
-  document.getElementById("feedback").textContent = "";
-  document.getElementById("hintText").style.display = "none";
-  updateNavButtons();
+  prevBtn.style.display = currentQuestionIndex > 0 ? "inline-block" : "none";
+  nextBtn.style.display = currentQuestionIndex < questions.length - 1 ? "inline-block" : "none";
+  submitBtn.style.display = currentQuestionIndex === questions.length - 1 ? "inline-block" : "none";
 }
 
 function checkAnswer(selected) {
   const q = questions[currentQuestionIndex];
-  const isCorrect = selected === q.answer;
-
-  const feedback = isCorrect ? q.feedback_correct : q.feedback_wrong;
-  document.getElementById("feedback").textContent = feedback;
-
-  if (!isCorrect && q.hintId && hints[q.hintId]) {
-    document.getElementById("hintText").textContent = hints[q.hintId];
-    document.getElementById("hintText").style.display = "block";
+  const correct = q.answer;
+  if (selected === correct) {
+    feedbackBox.textContent = q.feedback_correct;
+    feedbackBox.className = "feedback correct";
   } else {
-    document.getElementById("hintText").style.display = "none";
+    feedbackBox.textContent = q.feedback_wrong;
+    feedbackBox.className = "feedback wrong";
   }
 
-  if (isCorrect) {
-    score += 2;
+  if (q.hintId) {
+    hintText.textContent = `Hint: ${q.hintId}`;
+    hintText.classList.remove("hidden");
   }
-
-  // Save response to Google Sheet
-  sendToGoogleSheets({
-    studentId,
-    questionId: q.id,
-    userAnswer: selected,
-    score: isCorrect ? 2 : 0,
-    attempt
-  });
 }
 
-function sendToGoogleSheets(data) {
-  fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-    .then(res => res.text())
-    .then(res => console.log("✅ Saved to Google Sheets:", res))
-    .catch(err => console.error("❌ Error saving to Google Sheets:", err));
-}
-
-function showPreviousQuestion() {
+prevBtn.addEventListener("click", () => {
   if (currentQuestionIndex > 0) {
     currentQuestionIndex--;
-    loadQuestion();
+    renderQuestion();
   }
-}
+});
 
-function showNextQuestion() {
+nextBtn.addEventListener("click", () => {
   if (currentQuestionIndex < questions.length - 1) {
     currentQuestionIndex++;
-    loadQuestion();
+    renderQuestion();
   }
-}
+});
 
-function submitQuiz() {
-  document.getElementById("questionBox").innerHTML = `<h2>All done!</h2><p>Your score: ${score} / ${questions.length * 2}</p>`;
-  document.getElementById("feedback").textContent = "";
-  document.getElementById("hintText").style.display = "none";
-  document.querySelector(".nav-buttons").style.display = "none";
-}
-
-function updateNavButtons() {
-  document.getElementById("prevBtn").style.display = currentQuestionIndex === 0 ? "none" : "inline-block";
-  document.getElementById("nextBtn").style.display = currentQuestionIndex === questions.length - 1 ? "none" : "inline-block";
-  document.getElementById("submitBtn").style.display = currentQuestionIndex === questions.length - 1 ? "inline-block" : "none";
-}
+submitBtn.addEventListener("click", () => {
+  alert("🎉 Quiz complete! Thank you for participating.");
+  // Optional: Send data to spreadsheet
+  // sendQuizData();
+});
