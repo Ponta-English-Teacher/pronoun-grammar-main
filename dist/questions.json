@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1",
+    "type": "MC",
+    "questionText": "No bananas here ___ available.",
+    "choices": ["is", "are", "was", "were"],
+    "answer": "are",
+    "feedback_correct": "✅ Correct! \"Bananas\" is plural, so the verb must be \"are\".",
+    "feedback_wrong": "❌ \"Is\" is singular. \"Was\" and \"were\" are past tense, but this sentence is present.",
+    "hintId": "no_plural_noun_agreement",
+    "tags": ["agreement", "countable", "no", "plural"]
+  }
+]
