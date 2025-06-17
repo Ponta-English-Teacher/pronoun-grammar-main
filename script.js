@@ -1,98 +1,72 @@
-// ✅ script.js — Full Quiz Logic (40 Questions Supported)
-
-let currentQuestionIndex = 0;
-let studentId = "";
 let questions = [];
+let currentQuestion = 0;
+let score = 0;
+let studentId = '';
+let hints = {};
 
-const studentEntry = document.getElementById("studentEntry");
-const quizContent = document.getElementById("quizContent");
-const studentIdInput = document.getElementById("studentIdInput");
-const startBtn = document.getElementById("startBtn");
-const questionText = document.getElementById("questionText");
-const questionNumber = document.getElementById("questionNumber");
-const choicesContainer = document.getElementById("choices");
-const feedbackBox = document.getElementById("feedback");
-const hintText = document.getElementById("hintText");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const submitBtn = document.getElementById("submitBtn");
+document.getElementById('startBtn').addEventListener('click', async () => {
+  studentId = document.getElementById('studentIdInput').value.trim();
+  if (!studentId) return alert('Please enter your Student ID.');
 
-startBtn.addEventListener("click", () => {
-  studentId = studentIdInput.value.trim();
-  if (studentId === "") {
-    alert("Please enter your Student ID.");
-    return;
+  try {
+    const res = await fetch('questions.json');
+    questions = await res.json();
+
+    const hintRes = await fetch('hints.json');
+    hints = await hintRes.json();
+
+    document.getElementById('studentEntry').style.display = 'none';
+    document.getElementById('quizContent').style.display = 'block';
+    showQuestion();
+  } catch (e) {
+    document.getElementById('questionText').textContent = 'Failed to load questions.';
+    console.error(e);
   }
-  studentEntry.style.display = "none";
-  quizContent.style.display = "block";
-  loadQuestions();
 });
 
-async function loadQuestions() {
-  try {
-    const res = await fetch("questions.json");
-    questions = await res.json();
-    renderQuestion();
-  } catch (err) {
-    console.error("❌ Failed to load questions:", err);
-    questionText.textContent = "Failed to load questions.";
-  }
-}
+function showQuestion() {
+  const q = questions[currentQuestion];
+  document.getElementById('questionNumber').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+  document.getElementById('questionText').textContent = q.questionText;
 
-function renderQuestion() {
-  const q = questions[currentQuestionIndex];
-  questionText.textContent = q.questionText;
-  questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-  choicesContainer.innerHTML = "";
-  feedbackBox.textContent = "";
-  hintText.classList.add("hidden");
-
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
   q.choices.forEach(choice => {
-    const btn = document.createElement("button");
+    const btn = document.createElement('button');
     btn.textContent = choice;
-    btn.className = "btn choice-btn";
-    btn.addEventListener("click", () => checkAnswer(choice));
-    choicesContainer.appendChild(btn);
+    btn.onclick = () => handleAnswer(choice, q);
+    choicesDiv.appendChild(btn);
   });
 
-  prevBtn.style.display = currentQuestionIndex > 0 ? "inline-block" : "none";
-  nextBtn.style.display = currentQuestionIndex < questions.length - 1 ? "inline-block" : "none";
-  submitBtn.style.display = currentQuestionIndex === questions.length - 1 ? "inline-block" : "none";
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('hintText').textContent = '';
 }
 
-function checkAnswer(selected) {
-  const q = questions[currentQuestionIndex];
-  const correct = q.answer;
-  if (selected === correct) {
-    feedbackBox.textContent = q.feedback_correct;
-    feedbackBox.className = "feedback correct";
+function handleAnswer(choice, question) {
+  const feedbackDiv = document.getElementById('feedback');
+  const hintDiv = document.getElementById('hintText');
+  const isCorrect = choice === question.answer;
+
+  feedbackDiv.textContent = isCorrect ? `✅ ${question.feedback_correct}` : `❌ ${question.feedback_wrong}`;
+  feedbackDiv.className = isCorrect ? 'correct' : 'incorrect';
+
+  const hintMessage = hints[question.hintId] || `Hint: ${question.hintId}`;
+  hintDiv.textContent = hintMessage;
+
+  document.getElementById('nextBtn').classList.remove('hidden');
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  currentQuestion++;
+  document.getElementById('nextBtn').classList.add('hidden');
+
+  if (currentQuestion < questions.length) {
+    showQuestion();
   } else {
-    feedbackBox.textContent = q.feedback_wrong;
-    feedbackBox.className = "feedback wrong";
+    document.getElementById('questionText').textContent = '🎉 Quiz complete!';
+    document.getElementById('choices').innerHTML = '';
+    document.getElementById('feedback').textContent = `You scored ${score} out of ${questions.length}.`;
+    document.getElementById('hintText').textContent = '';
+    document.querySelector('.nav-buttons').innerHTML = '';
   }
-
-  if (q.hintId) {
-    hintText.textContent = `Hint: ${q.hintId}`;
-    hintText.classList.remove("hidden");
-  }
-}
-
-prevBtn.addEventListener("click", () => {
-  if (currentQuestionIndex > 0) {
-    currentQuestionIndex--;
-    renderQuestion();
-  }
-});
-
-nextBtn.addEventListener("click", () => {
-  if (currentQuestionIndex < questions.length - 1) {
-    currentQuestionIndex++;
-    renderQuestion();
-  }
-});
-
-submitBtn.addEventListener("click", () => {
-  alert("🎉 Quiz complete! Thank you for participating.");
-  // Optional: Send data to spreadsheet
-  // sendQuizData();
 });
