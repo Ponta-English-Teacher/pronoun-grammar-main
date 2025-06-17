@@ -1,124 +1,114 @@
+let currentQuestionIndex = 0;
+let score = 0;
 let questions = [];
 let hints = {};
-let currentIndex = 0;
-let score = 0;
-let studentId = "";
-let responses = [];
+let studentId = '';
+let userAnswers = [];
 
-const startBtn = document.getElementById("startBtn");
-const quizContent = document.getElementById("quizContent");
-const studentEntry = document.getElementById("studentEntry");
-const studentIdInput = document.getElementById("studentIdInput");
-const questionCounter = document.getElementById("questionCounter");
-const questionText = document.getElementById("questionText");
-const choicesDiv = document.getElementById("choices");
-const feedbackDiv = document.getElementById("feedback");
-const hintBox = document.getElementById("hintText");
-const nextBtn = document.getElementById("nextBtn");
-const submitBtn = document.getElementById("submitBtn");
-const finalScreen = document.getElementById("finalScreen");
-const scoreSummary = document.getElementById("scoreSummary");
-const finalSubmitBtn = document.getElementById("finalSubmitBtn");
-
-startBtn.addEventListener("click", () => {
-  const id = studentIdInput.value.trim();
-  if (!id) {
-    alert("Please enter your Student ID.");
-    return;
-  }
-  studentId = id;
-  studentEntry.style.display = "none";
-  quizContent.style.display = "block";
-  loadQuestion();
-});
-
-async function fetchData() {
-  const qRes = await fetch("questions.json");
-  questions = await qRes.json();
-  const hRes = await fetch("hints.json");
-  const hintsData = await hRes.json();
-  hintsData.forEach((h) => (hints[h.id] = h.text));
+async function loadData() {
+  const qResponse = await fetch('questions.json');
+  const hResponse = await fetch('hints.json');
+  questions = await qResponse.json();
+  const hintArray = await hResponse.json();
+  hints = Object.fromEntries(hintArray.map(h => [h.id, h.text]));
+  showQuestion();
 }
 
-function loadQuestion() {
-  const q = questions[currentIndex];
-  questionCounter.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
-  questionText.textContent = q.questionText;
-  choicesDiv.innerHTML = "";
-  feedbackDiv.innerText = "";
-  hintBox.innerText = "";
+function startQuiz() {
+  studentId = document.getElementById('student-id').value.trim();
+  if (!studentId) {
+    alert("Please enter your student ID.");
+    return;
+  }
+  document.getElementById('start-container').style.display = 'none';
+  document.getElementById('quiz-container').style.display = 'block';
+  loadData();
+}
 
-  q.choices.forEach((choice) => {
-    const label = document.createElement("label");
-    label.className = "choice-label";
-    const input = document.createElement("input");
-    input.type = "radio";
-    input.name = "choice";
-    input.value = choice;
-    label.appendChild(input);
-    label.append(` ${choice}`);
-    choicesDiv.appendChild(label);
-    choicesDiv.appendChild(document.createElement("br"));
+function showQuestion() {
+  const question = questions[currentQuestionIndex];
+  document.getElementById('question-number').textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+  document.getElementById('question-text').textContent = question.questionText;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  question.choices.forEach(choice => {
+    const label = document.createElement('label');
+    label.className = 'choice';
+    label.innerHTML = `
+      <input type="radio" name="choice" value="${choice}"> ${choice}
+    `;
+    choicesEl.appendChild(label);
   });
 
-  nextBtn.style.display = "block";
-  submitBtn.style.display = "none";
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('hint').textContent = '';
+  document.getElementById('next-button').style.display = 'none';
 }
 
-nextBtn.addEventListener("click", () => {
-  const selected = document.querySelector("input[name='choice']:checked");
-  if (!selected) {
-    alert("Please select an answer.");
-    return;
-  }
+function checkAnswer() {
+  const selected = document.querySelector('input[name="choice"]:checked');
+  if (!selected) return;
 
-  const userAnswer = selected.value;
-  const q = questions[currentIndex];
-  const isCorrect = userAnswer === q.answer;
-  const point = isCorrect ? 2 : 0;
-  score += point;
+  const answer = selected.value;
+  const question = questions[currentQuestionIndex];
+  const isCorrect = answer === question.answer;
 
-  feedbackDiv.textContent = isCorrect ? q.feedback_correct : q.feedback_wrong;
-  hintBox.textContent = hints[q.hintId] || "";
-
-  responses.push({
+  userAnswers.push({
     studentId,
-    questionId: q.id,
-    userAnswer,
-    score: point,
-    attempt: 1,
+    questionId: question.id,
+    userAnswer: answer,
+    score: isCorrect ? 2 : 0,
+    attempt: 1
   });
 
-  currentIndex++;
-  if (currentIndex < questions.length) {
-    setTimeout(() => {
-      loadQuestion();
-    }, 1200);
+  if (isCorrect) {
+    document.getElementById('feedback').textContent = question.feedback_correct;
+    score += 2;
   } else {
-    showFinalScreen();
+    document.getElementById('feedback').textContent = question.feedback_wrong;
   }
-});
 
-function showFinalScreen() {
-  quizContent.style.display = "none";
-  finalScreen.style.display = "block";
-  scoreSummary.textContent = `You scored ${score} out of ${questions.length * 2}`;
+  const hintText = hints[question.hintId] || '';
+  document.getElementById('hint').textContent = `💡 Hint: ${hintText}`;
+  document.getElementById('next-button').style.display = 'inline-block';
 }
 
-finalSubmitBtn.addEventListener("click", async () => {
-  try {
-    const res = await fetch("/api/sheet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(responses),
-    });
-    const result = await res.json();
-    alert(result.result || "Submitted successfully!");
-    finalSubmitBtn.disabled = true;
-  } catch (err) {
-    alert("Submission failed.");
-    console.error(err);
+function nextQuestion() {
+  currentQuestionIndex++;
+  if (currentQuestionIndex < questions.length) {
+    showQuestion();
+  } else {
+    showFinalScore();
   }
-});
+}
 
-window.addEventListener("DOMContentLoaded", fetchData);
+function showFinalScore() {
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('score-container').style.display = 'block';
+  document.getElementById('final-score').textContent = `✅ Your total score: ${score} / ${questions.length * 2}`;
+  document.getElementById('submit-button').style.display = 'inline-block';
+}
+
+async function submitAnswers() {
+  for (let entry of userAnswers) {
+    try {
+      await fetch('/api/sheet', {
+        method: 'POST',
+        body: JSON.stringify(entry),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.error('❌ Submission failed:', e);
+    }
+  }
+
+  alert("✅ Your answers were submitted!");
+  document.getElementById('submit-button').disabled = true;
+}
+
+// Attach event listeners
+document.getElementById('start-button').addEventListener('click', startQuiz);
+document.getElementById('choices').addEventListener('change', checkAnswer);
+document.getElementById('next-button').addEventListener('click', nextQuestion);
+document.getElementById('submit-button').addEventListener('click', submitAnswers);

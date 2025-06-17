@@ -2,49 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quantifiers & Agreement Quiz</title>
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="container">
     <h1>Quantifiers & Agreement Quiz</h1>
 
-    <!-- Student ID Input Page -->
+    <!-- Student ID Entry Page -->
     <div id="studentEntry">
       <label for="studentIdInput">Enter your Student ID:</label>
       <input type="text" id="studentIdInput" placeholder="e.g., S12345" />
-      <button id="startBtn">Start Quiz</button>
+      <button id="startBtn" class="btn">Start Quiz</button>
     </div>
 
-    <!-- Quiz Page -->
+    <!-- Quiz Content Page -->
     <div id="quizContent" style="display: none;">
       <div class="question-header">
-        <span id="questionCounter"></span>
+        <span id="questionNumber"></span>
       </div>
-      <div id="questionBox">
-        <p id="questionText">Loading...</p>
-        <div id="choices"></div>
-      </div>
+      <div id="questionText"></div>
+      <div id="choices"></div>
 
       <div id="feedback" class="feedback"></div>
-      <div id="hintText" class="hintBox"></div>
+      <div id="hintText" class="hint"></div>
 
-      <div class="button-group">
-        <button id="nextBtn" class="nav-button" style="display: none;">Next</button>
-        <button id="submitBtn" class="nav-button" style="display: none;">Submit to Teacher</button>
+      <div class="buttons">
+        <button id="nextBtn" class="btn hidden">Next</button>
+        <button id="submitBtn" class="btn hidden">Submit to Teacher</button>
       </div>
     </div>
 
-    <!-- Final Result -->
-    <div id="finalScreen" style="display: none;">
-      <h2>🎉 Quiz Complete!</h2>
-      <p id="scoreSummary"></p>
-      <button id="finalSubmitBtn">Submit to Teacher</button>
-    </div>
-  </div>
-
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+    <!-- Final Result Page -->
+    <div id="resultContent" style="display: none;">
+      <h2>
