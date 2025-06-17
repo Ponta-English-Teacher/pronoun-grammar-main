@@ -1,104 +1,110 @@
-// 🌐 Global Variables
 let currentQuestionIndex = 0;
 let questions = [];
 let hints = {};
-let userAnswers = [];
 let studentId = "";
+let userAnswers = [];
 
-// 📥 Load Questions and Hints
-Promise.all([
-  fetch("questions.json").then(res => res.json()),
-  fetch("hints.json").then(res => res.json())
-]).then(([q, h]) => {
-  questions = q;
-  h.forEach(item => hints[item.id] = item.text);
-  document.getElementById("startBtn").addEventListener("click", startQuiz);
-});
+const quizContent = document.getElementById("quizContent");
+const questionText = document.getElementById("questionText");
+const questionNumber = document.getElementById("questionNumber");
+const choicesDiv = document.getElementById("choices");
+const feedbackDiv = document.getElementById("feedback");
+const hintText = document.getElementById("hintText");
+const nextBtn = document.getElementById("nextBtn");
+const submitBtn = document.getElementById("submitBtn");
+const studentEntry = document.getElementById("studentEntry");
+const studentIdInput = document.getElementById("studentIdInput");
+const startBtn = document.getElementById("startBtn");
+const scoreDiv = document.getElementById("score");
 
-// 🚀 Start Quiz
-function startQuiz() {
-  studentId = document.getElementById("studentIdInput").value.trim();
-  if (!studentId) {
+startBtn.addEventListener("click", () => {
+  studentId = studentIdInput.value.trim();
+  if (studentId === "") {
     alert("Please enter your Student ID.");
     return;
   }
-  document.getElementById("studentEntry").style.display = "none";
-  document.getElementById("quizContainer").style.display = "block";
-  showQuestion();
-}
+  studentEntry.style.display = "none";
+  quizContent.style.display = "block";
+  loadQuestion();
+});
 
-// 🔄 Show Current Question
-function showQuestion() {
+function loadQuestion() {
   const question = questions[currentQuestionIndex];
-  document.getElementById("questionNumber").textContent = `${currentQuestionIndex + 1}/${questions.length}`;
-  document.getElementById("questionText").textContent = question.questionText;
+  questionText.textContent = question.questionText;
+  questionNumber.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
 
-  const choicesDiv = document.getElementById("choices");
   choicesDiv.innerHTML = "";
   question.choices.forEach(choice => {
     const label = document.createElement("label");
     label.className = "choice-label";
-    label.innerHTML = `<input type="radio" name="choice" value="${choice}" /> ${choice}`;
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "choice";
+    input.value = choice;
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(" " + choice));
     choicesDiv.appendChild(label);
   });
 
-  document.getElementById("hintText").textContent = "";
-  document.getElementById("feedbackText").textContent = "";
-  document.getElementById("submitBtn").style.display = "inline-block";
-  document.getElementById("nextBtn").style.display = "none";
+  feedbackDiv.textContent = "";
+  hintText.classList.add("hidden");
+  nextBtn.classList.remove("hidden");
+  submitBtn.classList.add("hidden");
 }
 
-// ✅ Submit Answer
-function submitAnswer() {
+nextBtn.addEventListener("click", () => {
   const selected = document.querySelector("input[name='choice']:checked");
   if (!selected) {
     alert("Please select an answer.");
     return;
   }
-  const answer = selected.value;
+
   const question = questions[currentQuestionIndex];
-  const isCorrect = answer === question.answer;
-  userAnswers[currentQuestionIndex] = {
-    questionId: question.id,
-    selected: answer,
-    correct: isCorrect
-  };
-
-  // Display feedback
+  const isCorrect = selected.value === question.answer;
+  const score = isCorrect ? 2 : 0;
   const feedback = isCorrect ? question.feedback_correct : question.feedback_wrong;
-  document.getElementById("feedbackText").textContent = feedback;
 
-  // Display hint
-  const hint = hints[question.hintId] || "";
-  document.getElementById("hintText").textContent = `Hint: ${hint}`;
+  feedbackDiv.innerHTML = isCorrect
+    ? `✅✅ ${feedback}`
+    : `❌ ${feedback}`;
 
-  document.getElementById("submitBtn").style.display = "none";
-  document.getElementById("nextBtn").style.display = "inline-block";
-}
-
-// ⏭ Next Question
-function nextQuestion() {
-  currentQuestionIndex++;
-  if (currentQuestionIndex < questions.length) {
-    showQuestion();
-  } else {
-    showResults();
+  if (question.hintId && hints[question.hintId]) {
+    hintText.textContent = "💡 " + hints[question.hintId];
+    hintText.classList.remove("hidden");
   }
+
+  userAnswers.push({
+    questionId: question.id,
+    selected: selected.value,
+    correct: isCorrect,
+  });
+
+  currentQuestionIndex++;
+
+  if (currentQuestionIndex < questions.length) {
+    nextBtn.textContent = "Next";
+    nextBtn.removeEventListener("click", loadQuestion);
+    nextBtn.addEventListener("click", loadQuestionAndReset);
+  } else {
+    nextBtn.classList.add("hidden");
+    submitBtn.classList.remove("hidden");
+    showScore();
+  }
+});
+
+function loadQuestionAndReset() {
+  nextBtn.removeEventListener("click", loadQuestionAndReset);
+  loadQuestion();
 }
 
-// 📊 Show Results
-function showResults() {
-  document.getElementById("quizContainer").style.display = "none";
-  document.getElementById("resultContainer").style.display = "block";
+submitBtn.addEventListener("click", submitToSpreadsheet);
 
-  const correctCount = userAnswers.filter(a => a.correct).length;
-  document.getElementById("score").textContent = `You got ${correctCount} out of ${questions.length} questions right.`;
-
-  // Submit to spreadsheet
-  submitToSpreadsheet();
+function showScore() {
+  const correctCount = userAnswers.filter(ans => ans.correct).length;
+  scoreDiv.innerHTML = `<div class="score-banner">🎉 Quiz complete!</div><div class="score-result">You scored ${correctCount} out of ${questions.length}.</div>`;
+  scoreDiv.style.display = "block";
 }
 
-// 📤 Submit Data to Spreadsheet
 function submitToSpreadsheet() {
   userAnswers.forEach(ans => {
     fetch("https://relative-clause-quiz-vercel.vercel.app/api/record", {
@@ -109,16 +115,20 @@ function submitToSpreadsheet() {
         questionId: ans.questionId,
         userAnswer: ans.selected,
         score: ans.correct ? 2 : 0,
-        attempt: 1
-      })
-    }).then(res => res.json()).then(data => {
-      console.log("✅ Sent:", data);
-    }).catch(err => console.error("❌ Error:", err));
+      }),
+    });
   });
+  alert("✅ Your answers have been submitted. Thank you!");
 }
 
-// 🧠 Event Listeners
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("submitBtn").addEventListener("click", submitAnswer);
-  document.getElementById("nextBtn").addEventListener("click", nextQuestion);
+// Load questions and hints
+Promise.all([
+  fetch("questions.json").then(res => res.json()),
+  fetch("hints.json").then(res => res.json())
+]).then(([loadedQuestions, loadedHints]) => {
+  questions = loadedQuestions;
+  hints = loadedHints;
+}).catch(error => {
+  console.error("Failed to load data:", error);
+  questionText.textContent = "⚠️ Failed to load quiz.";
 });
