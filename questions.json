@@ -437,7 +437,7 @@
       "True",
       "False"
     ],
-    "answer": "FALSE",
+    "answer": "False",
     "feedback_correct": "\u2705 Correct! The verb should agree with the subject closest to it. Since \"teacher\" is singular, use \"is\".",
     "feedback_wrong": "\u274c Incorrect. The verb must agree with the closest subject (\"teacher\"), so it should be \"is present\".",
     "hintId": "neither_nor_agreement",
@@ -455,7 +455,7 @@
       "True",
       "False"
     ],
-    "answer": "FALSE",
+    "answer": "False",
     "feedback_correct": "\u2705 Correct! \"Each\" is singular and takes a singular verb, so it should be \"is responsible\".",
     "feedback_wrong": "\u274c Incorrect. \"Each\" is singular and must be followed by a singular verb, not \"are\".",
     "hintId": "each_of_singular_agreement",
@@ -474,7 +474,7 @@
       "True",
       "False"
     ],
-    "answer": "FALSE",
+    "answer": "False",
     "feedback_correct": "\u2705 Correct! \u201cNone of\u201d with plural nouns typically takes a plural verb: \u201care missing\u201d.",
     "feedback_wrong": "\u274c Incorrect. With plural nouns, \u201cnone of\u201d usually takes a plural verb, so \u201cis missing\u201d is wrong here.",
     "hintId": "quantifier_noun_agreement",
@@ -493,7 +493,7 @@
       "True",
       "False"
     ],
-    "answer": "FALSE",
+    "answer": "False",
     "feedback_correct": "\u2705 Correct! When using \u201csome\u201d with a plural noun without \u201cof,\u201d no article or determiner should follow. It should be \u201cSome students...\u201d",
     "feedback_wrong": "\u274c Incorrect. \u201cSome of students\u201d is incorrect because \u201csome of\u201d must be followed by a definite noun phrase like \u201csome of the students.\u201d",
     "hintId": "some_of_definiteness",
@@ -592,7 +592,7 @@
       "True",
       "False"
     ],
-    "answer": "FALSE",
+    "answer": "True",
     "feedback_correct": "\u2705 Correct! The correct correlative conjunction is \u201cNeither\u2026nor,\u201d not \u201cNeither\u2026or.\u201d",
     "feedback_wrong": "\u274c Incorrect. \u201cNeither\u2026or\u201d is ungrammatical; use \u201cNeither\u2026nor\u201d for correct sentences.",
     "hintId": "neither_nor_agreement",
