@@ -506,12 +506,12 @@
   {
     "id": 27,
     "type": "MC",
-    "questionText": "___ both parents are quite well-educated.",
+    "questionText": "___ parents are quite well-educated.",
     "choices": [
-      "Their",
+      "Both of",
       "Both their",
       "Their both",
-      "The both"
+      "The both of"
     ],
     "answer": "Both their",
     "feedback_correct": "\u2705 Correct! \"Both\" comes before the possessive pronoun \"their\".",
